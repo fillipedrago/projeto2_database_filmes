@@ -62,4 +62,20 @@ cast_df = pd.DataFrame(final_cast, columns=['Cast'])
 # Merging it back to the original DF:
 cleaned_original_df = original_df.drop(columns=['Cast']).join(cast_df)
 
-cleaned_original_df.to_csv("test.csv")
+
+## Task 2: Creating IDs for Director, Writers and Cast
+
+cleaned_original_df['Director_ID'] = pd.factorize(cleaned_original_df['Director'])[0]
+cleaned_original_df['Writers_ID'] = pd.factorize(cleaned_original_df['Writers'])[0]
+cleaned_original_df['Cast_ID'] = pd.factorize(cleaned_original_df['Cast'])[0]
+
+# Task 3: Creating separate dimension tables for Director, Writers, and Cast
+
+# reset_index() is used to drop the additional index that is created automatically with the df
+dim_director = cleaned_original_df[['Director_ID', 'Director']].drop_duplicates().reset_index(drop=True)
+dim_writers = cleaned_original_df[['Writers_ID', 'Writers']].drop_duplicates().reset_index(drop=True)
+dim_cast = cleaned_original_df[['Cast_ID', 'Cast']].drop_duplicates().reset_index(drop=True)
+fact_movies = cleaned_original_df[["Title", "Year", "Short Summary", "Runtime"\
+                                   ,"Rating", "Director_ID", "Writers_ID", "Cast_ID"]]
+
+
