@@ -9,6 +9,7 @@ __version__ = "0.1.0"
 
 import psycopg2
 import pandas as pd
+from sqlalchemy import create_engine
 
 def create_database():
     #Connecting to postgres default database:
@@ -23,20 +24,27 @@ def create_database():
 
     conn.close()
 
-    conn = psycopg2.connect("host=127.0.0.1 dbname=movies port=5433\
-                            user=postgres password=PI314159")
 
     return cur, conn
 
-# def drop_tables(cur, conn):
-#     for query in drop_tables_queries:
-#         cur.execute(query)
-#         conn.commit()
 
-# def create_tables(cur, conn):
-#     for query in create_table_queries:
-#         cur.execute(query)
-#         conn.commit()
+def upload_tables_to_postgres(dim_director, dim_writers, dim_cast, fact_movies):
+    # Creating connection string:
+    conn_string = "postgresql://postgres:PI314159@localhost:5433/movies"
+
+    # Creating SQLAlchemy engine
+    engine = create_engine(conn_string)
+
+    # Uploadind dimension tables
+    dim_director.to_sql('dim_director', engine, index=False, if_exists='replace')
+    dim_writers.to_sql('dim_writers', engine, index=False, if_exists='replace')
+    dim_cast.to_sql('dim_cast', engine, index=False, if_exists='replace')
+
+    # Uploading fact table
+    fact_movies.to_sql('fact_movies', engine, index=True, if_exists='replace')
+
+    # Committting the transaction
+    engine.dispose()  # Closing the connection
 
 original_df = pd.read_csv("../Datasets/Hydra-Movie-Scrape.csv")
 
@@ -79,3 +87,11 @@ fact_movies = cleaned_original_df[["Title", "Year", "Short Summary", "Runtime"\
                                    ,"Rating", "Director_ID", "Writers_ID", "Cast_ID"]]
 
 
+# Calling create_database() function to create the 'movies' database
+cur, conn = create_database()
+
+# Calling upload_tables_to_postgres() function to upload tables to the 'movies' database
+upload_tables_to_postgres(dim_director, dim_writers, dim_cast, fact_movies)
+
+# Closing the connection
+conn.close()
